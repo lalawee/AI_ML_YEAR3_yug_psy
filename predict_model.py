@@ -1,35 +1,13 @@
 import pandas as pd
 import joblib
 from sklearn.metrics import classification_report, mean_squared_error, mean_absolute_error
-from sklearn.preprocessing import LabelEncoder
 import argparse
 import numpy as np
 import os
 import subprocess
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
-
-def preprocess_data(data):
-    # Remove $ sign and commas from Passenger Fare and convert to float
-    data['Passenger Fare'] = data['Passenger Fare'].replace({'\\$': '', ',': ''}, regex=True).astype(float)
-    
-    # Convert 'Survived' column from 'Yes/No' to 1/0 for binary classification
-    data['Survived'] = data['Survived'].apply(lambda x: 1 if x == 'Yes' else 0)
-    
-    # Encode categorical columns
-    le = LabelEncoder()
-    for col in ['Ticket Class', 'Embarkation Country', 'Gender']:
-        data[col] = le.fit_transform(data[col].astype(str))
-    
-    # Drop irrelevant columns
-    data = data.drop(['Passenger ID', 'Ticket Number', 'Cabin', 'Name'], axis=1)
-
-    # Ensure any missing numerical values are filled with median
-    data.fillna(data.median(numeric_only=True), inplace=True)
-
-    X = data.drop('Survived', axis=1)
-    y = data['Survived']
-    return X, y
+from preprocessing import preprocess_data
 
 def apply_color_coding(excel_file):
     # Open the Excel file and access the worksheet

@@ -5,22 +5,9 @@ from sklearn.metrics import classification_report, mean_squared_error, mean_abso
 import joblib
 import argparse
 from configparser import ConfigParser
-from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import subprocess
-
-def preprocess_data(data):
-    # Process the dataset
-    data['Passenger Fare'] = data['Passenger Fare'].replace({'\\$': '', ',': ''}, regex=True).astype(float)
-    le = LabelEncoder()
-    for col in ['Ticket Class', 'Embarkation Country', 'Gender', 'Survived']:
-        data[col] = le.fit_transform(data[col].astype(str))
-    data = data.drop(['Passenger ID', 'Ticket Number', 'Cabin', 'Name'], axis=1)
-    data.fillna(data.median(), inplace=True)
-
-    X = data.drop('Survived', axis=1)
-    y = data['Survived']
-    return X, y
+from preprocessing import preprocess_data
 
 def train_model(train_data, model_output, config_file):
     data = pd.read_csv(train_data)

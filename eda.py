@@ -2,26 +2,21 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
-from sklearn.preprocessing import LabelEncoder
+from preprocessing import preprocess_data
 
 def eda(data_path, output_folder):
     # Load data
     data = pd.read_csv(data_path)
 
-    # Remove $ sign and commas from Passenger Fare and convert to float
-    data['Passenger Fare'] = data['Passenger Fare'].replace({'\\$': '', ',': ''}, regex=True).astype(float)
-
-    # Encode categorical columns
-    le = LabelEncoder()
-    for col in ['Embarkation Country', 'Gender', 'Survived']:
-        data[col] = le.fit_transform(data[col].astype(str))
-
-    # Drop irrelevant columns for correlation analysis
-    data = data.drop(['Passenger ID', 'Ticket Number', 'Cabin', 'Name'], axis=1)
+    # Preprocess using the shared module; recombine X and y for full-frame analysis
+    X, y = preprocess_data(data)
+    data = X.copy()
+    if y is not None:
+        data['Survived'] = y.values
 
     # Descriptive statistics
     print(data.describe())
-    
+
     # Missing values
     print("Missing Values:\n", data.isnull().sum())
 

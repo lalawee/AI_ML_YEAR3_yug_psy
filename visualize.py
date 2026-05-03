@@ -2,33 +2,15 @@ import pandas as pd
 import joblib
 import argparse
 from sklearn.metrics import classification_report
-from sklearn.preprocessing import LabelEncoder
-
-def preprocess_data(data):
-    # Remove $ sign and commas from Passenger Fare and convert to float
-    data['Passenger Fare'] = data['Passenger Fare'].replace({'\\$': '', ',': ''}, regex=True).astype(float)
-    
-    # Encode categorical columns
-    le = LabelEncoder()
-    for col in ['Ticket Class', 'Embarkation Country', 'Gender']:
-        data[col] = le.fit_transform(data[col].astype(str))
-    
-    # Drop irrelevant columns
-    data = data.drop(['Passenger ID', 'Ticket Number', 'Cabin', 'Name'], axis=1)
-    return data
+from preprocessing import preprocess_data
 
 def visualize_model_performance(model_path, test_data_path):
     # Load model and data
     model = joblib.load(model_path)
     data = pd.read_csv(test_data_path)
-    
-    # Encode the target label 'Survived' to match the prediction format
-    le = LabelEncoder()
-    data['Survived'] = le.fit_transform(data['Survived'].astype(str))  # Convert 'Yes', 'No' to 1, 0
-    
-    # Drop the target column 'Survived' before prediction
-    y = data['Survived']
-    X = preprocess_data(data.drop('Survived', axis=1))
+
+    # Preprocess data using the shared module
+    X, y = preprocess_data(data)
 
     # Predict and evaluate
     y_pred = model.predict(X)
