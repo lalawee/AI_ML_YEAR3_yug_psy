@@ -91,7 +91,9 @@ def predict(test_data, model_path, config_file, registry_file, metrics_file, out
     y_pred_labels = np.where(y_pred == 1, 'Yes', 'No')
 
     # Add predictions back to the original dataframe
-    data['Survived?'] = np.where(y == 1, 'Yes', 'No')
+    # Only add ground-truth column if labels were present in the CSV
+    if y is not None:
+        data['Survived?'] = np.where(y == 1, 'Yes', 'No')
     data['Insure?'] = y_pred_labels
 
     # Generate output filenames dynamically
@@ -105,37 +107,47 @@ def predict(test_data, model_path, config_file, registry_file, metrics_file, out
 
     apply_color_coding(output_excel)
 
-    # Generate and print classification report
-    test_report = classification_report(y, y_pred, target_names=target_names)
-    print("Test set report:\n", test_report)
+    # Metrics and classification report — only possible when ground-truth labels are available
+    if y is not None:
+        test_report = classification_report(y, y_pred, target_names=target_names)
+        print("Test set report:\n", test_report)
 
-    os.makedirs(output_dir, exist_ok=True)
-    report_filename = os.path.join(output_dir, f"{file_name}_classification_report.txt")
-    with open(report_filename, "w") as f:
-        f.write(test_report)
+        os.makedirs(output_dir, exist_ok=True)
+        report_filename = os.path.join(output_dir, f"{file_name}_classification_report.txt")
+        with open(report_filename, "w") as f:
+            f.write(test_report)
 
-    # Calculate MSE, RMSE, and MAE
-    mse = mean_squared_error(y, y_pred)
-    rmse = float(np.sqrt(mse))
-    mae = mean_absolute_error(y, y_pred)
+        mse = mean_squared_error(y, y_pred)
+        rmse = float(np.sqrt(mse))
+        mae = mean_absolute_error(y, y_pred)
 
-    print(f"Test set MSE: {mse:.4f}, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
+        print(f"Test set MSE: {mse:.4f}, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
+
+        metrics = {
+            "report_type": "test",
+            "model_type": config['model_type'],
+            "search_strategy": config.get('search_strategy'),
+            "scoring": config.get('scoring'),
+            "hyperparameters": resolved_params,
+            "test": {
+                "mse": round(float(mse), 6),
+                "rmse": round(rmse, 6),
+                "mae": round(float(mae), 6),
+                "classification_report": test_report
+            }
+        }
+    else:
+        print("No ground-truth labels found in test data — skipping accuracy metrics.")
+        metrics = {
+            "report_type": "prediction_only",
+            "model_type": config['model_type'],
+            "search_strategy": config.get('search_strategy'),
+            "scoring": config.get('scoring'),
+            "hyperparameters": resolved_params
+        }
 
     # Write metrics JSON with fully resolved params
     os.makedirs(os.path.dirname(metrics_file), exist_ok=True)
-    metrics = {
-        "report_type": "test",
-        "model_type": config['model_type'],
-        "search_strategy": config.get('search_strategy'),
-        "scoring": config.get('scoring'),
-        "hyperparameters": resolved_params,
-        "test": {
-            "mse": round(float(mse), 6),
-            "rmse": round(rmse, 6),
-            "mae": round(float(mae), 6),
-            "classification_report": test_report
-        }
-    }
     with open(metrics_file, "w") as f:
         json.dump(metrics, f, indent=2)
     print(f"Metrics saved to {metrics_file}")

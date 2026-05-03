@@ -8,7 +8,7 @@ read -p "Experiment number (e.g. 000001): " exp_number
 
 registry_file="model_config/model_registry.json"
 config_file="model_config/${model_name}/config_${strategy}_${model_name}_exp_${exp_number}.json"
-model_output="${model_name}_model.pkl"
+model_output="models/${model_name}/${strategy}_exp_${exp_number}_${model_name}.pkl"
 train_metrics_file="metrics/${model_name}/metrics_${strategy}_${model_name}_exp_${exp_number}_train.json"
 test_metrics_file="metrics/${model_name}/metrics_${strategy}_${model_name}_exp_${exp_number}_test.json"
 
@@ -36,9 +36,9 @@ while true; do
 
     if [[ "$choice" == "1" ]]; then
         echo "Training the model..."
-        mkdir -p "$train_output_dir" "metrics/${model_name}"
+        mkdir -p "$train_output_dir" "metrics/${model_name}" "models/${model_name}"
         python3 train_model.py \
-            --train MS_1_Scenario_train.csv \
+            --train raw_csv/MS_1_Scenario_train.csv \
             --model_output "$model_output" \
             --config "$config_file" \
             --registry "$registry_file" \
@@ -52,7 +52,7 @@ while true; do
         echo "Testing on available validation dataset..."
         mkdir -p "$test_output_dir" "$predicted_data_dir" "metrics/${model_name}"
         python3 predict_model.py \
-            --test MS_1_Scenario_test.csv \
+            --test raw_csv/MS_1_Scenario_test.csv \
             --model "$model_output" \
             --config "$config_file" \
             --registry "$registry_file" \

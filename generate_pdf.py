@@ -57,11 +57,13 @@ def generate_pdf(metrics_file, output_file):
         pdf.ln(4)
 
     else:
-        # For test reports, show model and strategy as header info
+        # For test and prediction_only reports, show model and strategy as header info
         add_section_header(pdf, "Model Configuration")
         pdf.cell(0, 7, txt=f"  Model type      : {model_type}", ln=True)
         pdf.cell(0, 7, txt=f"  Search strategy : {search_strategy}", ln=True)
         pdf.cell(0, 7, txt=f"  Scoring metric  : {scoring}", ln=True)
+        if report_type == "prediction_only":
+            pdf.cell(0, 7, txt=f"  Note: No ground-truth labels provided — accuracy metrics unavailable.", ln=True)
         pdf.ln(4)
 
     # ── Full Resolved Hyperparameters ──────────────────────────────────────────
@@ -70,21 +72,22 @@ def generate_pdf(metrics_file, output_file):
         pdf.cell(0, 7, txt=f"  {key}: {value}", ln=True)
     pdf.ln(4)
 
-    # ── Error Metrics ──────────────────────────────────────────────────────────
-    add_section_header(pdf, "Error Metrics")
-    if report_type == "training":
-        train = metrics.get("training", {})
-        val   = metrics.get("validation", {})
-        add_metrics_block(pdf, "Training Set",
-                          train["mse"], train["rmse"], train["mae"])
-        add_metrics_block(pdf, "Validation Set",
-                          val["mse"], val["rmse"], val["mae"])
-    else:
-        test = metrics.get("test", {})
-        add_metrics_block(pdf, "Test Set",
-                          test["mse"], test["rmse"], test["mae"])
+    # ── Error Metrics (skipped for prediction_only) ────────────────────────────
+    if report_type in ("training", "test"):
+        add_section_header(pdf, "Error Metrics")
+        if report_type == "training":
+            train = metrics.get("training", {})
+            val   = metrics.get("validation", {})
+            add_metrics_block(pdf, "Training Set",
+                              train["mse"], train["rmse"], train["mae"])
+            add_metrics_block(pdf, "Validation Set",
+                              val["mse"], val["rmse"], val["mae"])
+        else:
+            test = metrics.get("test", {})
+            add_metrics_block(pdf, "Test Set",
+                              test["mse"], test["rmse"], test["mae"])
 
-    # ── Classification Reports ─────────────────────────────────────────────────
+    # ── Classification Reports (skipped for prediction_only) ──────────────────
     if report_type == "training":
         train = metrics.get("training", {})
         val   = metrics.get("validation", {})
@@ -113,7 +116,7 @@ def generate_pdf(metrics_file, output_file):
                     f"Params: {entry['params']}"
                 )
                 pdf.multi_cell(0, 6, line)
-    else:
+    elif report_type == "test":
         test = metrics.get("test", {})
         add_section_header(pdf, "Test Classification Report")
         pdf.set_font("Courier", size=9)
